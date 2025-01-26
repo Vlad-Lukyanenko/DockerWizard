@@ -13,36 +13,121 @@ namespace DockerWizard.Services
             _sshClient = new SshClient(credentials.Host, credentials.UserName, credentials.Password);
         }
 
-        public string RunLocalCommand(string command, string workingDirectory)
+        public async Task RunLocalCommand(string command, string workingDirectory)
         {
-            var psi = new ProcessStartInfo
-            {
-                FileName = "docker",
-                Arguments = command,
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                CreateNoWindow = true,
-                WorkingDirectory = workingDirectory
-            };
+            // Создаем процесс
+            Process process = new Process();
 
-            using (var process = Process.Start(psi))
-            {
-                string result = process!.StandardOutput.ReadToEnd();
-                process.WaitForExit();
+            process.StartInfo.FileName = "cmd";
+            process.StartInfo.Arguments = $"/c {command}";
+            process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.RedirectStandardError = true;
+            process.StartInfo.UseShellExecute = false;
+            process.StartInfo.CreateNoWindow = true;
+            process.StartInfo.WorkingDirectory = workingDirectory;
 
-                return result;
+            // Запуск процесса
+            process.Start();
+
+            // Чтение стандартного вывода в реальном времени
+            var outputTask = Task.Run(() =>
+            {
+                while (!process.StandardOutput.EndOfStream)
+                {
+                    string line = process.StandardOutput.ReadLine();
+                    Console.WriteLine(line);
+                }
+            });
+
+            // Чтение стандартного потока ошибок в реальном времени
+            var errorTask = Task.Run(() =>
+            {
+                while (!process.StandardError.EndOfStream)
+                {
+                    string line = process.StandardError.ReadLine();
+
+                    // Проверяем, является ли строка реальной ошибкой
+                    if (line.Contains("error", StringComparison.OrdinalIgnoreCase) ||
+                        line.Contains("failed", StringComparison.OrdinalIgnoreCase))
+                    {
+                        Console.WriteLine($"Error: {line}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"[INFO] {line}");
+                    }
+                }
+            });
+
+            // Ожидание завершения процесса
+            await Task.WhenAll(outputTask, errorTask);
+            process.WaitForExit();
+
+            // Проверка кода завершения
+            if (process.ExitCode != 0)
+            {
+                Console.WriteLine($"Command failed with exit code: {process.ExitCode}");
             }
         }
 
-        public async Task<string> RunRemoteCommand(string command)
+        public async Task RunRemoteCommand(string command)
         {
-            await _sshClient.ConnectAsync(CancellationToken.None);
+            try
+            {
+                // Подключение к серверу
+                await _sshClient.ConnectAsync(CancellationToken.None);
 
-            var response = _sshClient.RunCommand(command);
+                // Создание команды
+                using (var sshCommand = _sshClient.CreateCommand(command))
+                {
+                    // Асинхронное чтение вывода
+                    var outputTask = Task.Run(async () =>
+                    {
+                        using (var reader = new System.IO.StreamReader(sshCommand.OutputStream))
+                        {
+                            while (!reader.EndOfStream)
+                            {
+                                string line = await reader.ReadLineAsync();
+                                Console.WriteLine(line);
+                            }
+                        }
+                    });
 
-            _sshClient.Disconnect();
+                    // Асинхронное чтение ошибок
+                    var errorTask = Task.Run(async () =>
+                    {
+                        using (var reader = new System.IO.StreamReader(sshCommand.ExtendedOutputStream))
+                        {
+                            while (!reader.EndOfStream)
+                            {
+                                string line = await reader.ReadLineAsync();
+                                Console.WriteLine($"Error: {line}");
+                            }
+                        }
+                    });
 
-            return response.Result;
+                    // Запуск команды
+                    sshCommand.Execute();
+
+                    // Ожидание завершения чтения вывода и ошибок
+                    await Task.WhenAll(outputTask, errorTask);
+
+                    // Проверка кода завершения
+                    if (sshCommand.ExitStatus != 0)
+                    {
+                        Console.WriteLine($"Command failed with exit code: {sshCommand.ExitStatus}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred: {ex.Message}");
+            }
+            finally
+            {
+                // Отключение от сервера
+                _sshClient.Disconnect();
+            }
         }
     }
 }
