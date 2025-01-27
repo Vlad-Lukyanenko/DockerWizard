@@ -1,0 +1,77 @@
+{
+  "ProjectAndDockerCommands.1": [
+    {
+      "ProjectName": "FilePocket.UI",
+      "Path": "C:\\GitHub\\FilePocket",
+      "CreateAndPushCommands": [
+        {
+          "Name": "Build",
+          "Command": "docker build -f FilePocket.Client/Dockerfile -t filepocketclient ."
+        },
+        {
+          "Name": "Login",
+          "Command": "docker login"
+        },
+        {
+          "Name": "Tag",
+          "Command": "docker tag filepocketclient:latest deploymentservice/filepocketclient:latest"
+        },
+        {
+          "Name": "Push",
+          "Command": "docker push deploymentservice/filepocketclient:latest"
+        }
+      ],
+      "PullAndDeployCommands": [
+        {
+          "Name": "Remove container",
+          "Command": "docker container rm -f filepocket-client"
+        },
+        {
+          "Name": "Get latest",
+          "Command": "docker pull deploymentservice/filepocketclient:latest"
+        },
+        {
+          "Name": "Run container",
+          "Command": "docker run -e ASPNETCORE_ENVIRONMENT=Production -d -p 5277:80 --name  filepocket-client deploymentservice/filepocketclient:latest"
+        }
+      ]
+    },
+    {
+      "ProjectName": "FilePocket.API",
+      "Path": "C:\\GitHub\\FilePocket",
+      "CreateAndPushCommands": [
+        {
+          "Name": "Build",
+          "Command": "docker build -f FilePocket.Host/Dockerfile -t filepockethost ."
+        },
+        {
+          "Name": "Login",
+          "Command": "docker login"
+        },
+        {
+          "Name": "Tag",
+          "Command": "docker tag filepockethost:latest deploymentservice/filepockethost:latest"
+        },
+        {
+          "Name": "Push",
+          "Command": "docker push deploymentservice/filepockethost:latest"
+        }
+      ],
+
+      "PullAndDeployCommands": [
+        {
+          "Name": "Remove container",
+          "Command": "docker container rm -f filepocket-api"
+        },
+        {
+          "Name": "Get latest",
+          "Command": "docker pull deploymentservice/filepockethost:latest"
+        },
+        {
+          "Name": "Run container",
+          "Command": "docker run -d  -p 32768:8080  --name filepocket-api  -v /home/app/filepocket:/home/app/filepocket deploymentservice/filepockethost:latest"
+        }
+      ]
+    }
+  ]
+}
