@@ -8,7 +8,8 @@ namespace DockerWizard
     internal class Program
     {
         public static ServerCredentials? _serverCredentials { get; private set; }
-        private static FilePocketCommands? _filePocketCommands;
+        private static FilePocketUICommands? _filePocketUICommands;
+        private static FilePocketAPICommands? _filePocketAPICommands;
         private static DockerService? _dockerService;
         private static string? _filePocketRootFolder;
 
@@ -16,29 +17,48 @@ namespace DockerWizard
         {
             InitApplication();
 
-            Console.WriteLine("Welcome to Docker Wizard!");
-            Console.WriteLine("To deploy FilePocket IU press - [ 1 ]");
+            Console.WriteLine("Welcome to Docker Wizard!\n");
+            Console.WriteLine("To deploy [ FilePocket FE ] press - [ 1 ]");
+            Console.WriteLine("To deploy [ FilePocket BE ] press - [ 2 ]");
+
+            Console.WriteLine();
 
             var key = Console.ReadKey();
 
             if (key.KeyChar == '1')
             {
-                Console.WriteLine("\n\n[ Local commands ]\n");
-                await RunCreateAndPushCommands(_filePocketCommands!.CreateAndPushCommands!);
+                Console.WriteLine("\nBuild and Deploy FilePocket UI");
+
+                Console.WriteLine("\n[ Local commands ]\n");
+                await RunCreateAndPushCommands(_filePocketUICommands!.CreateAndPushCommands!);
 
                 Console.WriteLine("[ Server commands ]\n");
-                await PullAndDeploy(_filePocketCommands!.PullAndDeployCommands!);
+                await PullAndDeploy(_filePocketUICommands!.PullAndDeployCommands!);
+            }
+
+            if (key.KeyChar == '2')
+            {
+                Console.WriteLine("\n\nBuild and Deploy FilePocket Host");
+
+                Console.WriteLine("\n[ Local commands ]\n");
+                await RunCreateAndPushCommands(_filePocketAPICommands!.CreateAndPushCommands!);
+
+                Console.WriteLine("[ Server commands ]\n");
+                await PullAndDeploy(_filePocketAPICommands!.PullAndDeployCommands!);
             }
         }
 
         private static void InitApplication()
         {
+            Console.WriteLine("Application setup\n");
             var builder = new ConfigurationBuilder().AddJsonFile("appsettings.json", optional: false);
             IConfiguration config = builder.Build();
 
             _serverCredentials = config.GetSection("ServerCredentials").Get<ServerCredentials>()!;
 
-            _filePocketCommands = config.GetSection("FilePocketCommands").Get<FilePocketCommands?>()!;
+            Console.WriteLine("Init Docker commands\n");
+            _filePocketUICommands = config.GetSection("FilePocketUICommands").Get<FilePocketUICommands?>()!;
+            _filePocketAPICommands = config.GetSection("FilePocketAPICommands").Get<FilePocketAPICommands?>()!;
             _filePocketRootFolder = config.GetSection("FilePocketRootFolder").Get<string?>()!;
 
             _dockerService = new DockerService(_serverCredentials);
