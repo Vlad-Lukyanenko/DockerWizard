@@ -14,6 +14,7 @@ namespace DockerWizard.UI
         private string _selectedProject = string.Empty;
 
         private List<Server>? _servers;
+        private GitSettings? _gitSettings;
         private List<ProjectAndDockerCommands> _projectsAndDockerCommands = new List<ProjectAndDockerCommands>();
 
         public Main()
@@ -95,11 +96,13 @@ namespace DockerWizard.UI
                 server.Credentials.UserName,
                 server.Credentials.Password);
 
-
             AddLog($"Build and Deploy - {project.ProjectName}");
             AddLog("[ Local commands ]");
 
-            await RunCreateAndPushCommands(project.CreateAndPushCommands, project.Path);
+            project.CreateAndPushCommands.Single(c => c.Name == "Build").Command
+                += $" https://{_gitSettings!.AccessToken}@github.com/{_gitSettings.UserName}/{project!.GitRepository!.RepositoryName}.git#{project.GitRepository.BranchName}";
+
+            await RunCreateAndPushCommands(project.CreateAndPushCommands);
 
             AddLog("[ Server commands ]");
             await PullAndDeploy(project.PullAndDeployCommands);
@@ -119,12 +122,12 @@ namespace DockerWizard.UI
             }
         }
 
-        private async Task RunCreateAndPushCommands(List<DockerCommand> commands, string rootFolder)
+        private async Task RunCreateAndPushCommands(List<DockerCommand> commands)
         {
             foreach (var c in commands)
             {
                 AddLog(c.Name);
-                await RunLocalCommand(c.Command, rootFolder);
+                await RunLocalCommand(c.Command);
             }
         }
 
@@ -137,7 +140,7 @@ namespace DockerWizard.UI
             }
         }
 
-        public async Task RunLocalCommand(string command, string workingDirectory)
+        public async Task RunLocalCommand(string command)
         {
             var process = new Process();
 
@@ -147,7 +150,6 @@ namespace DockerWizard.UI
             process.StartInfo.RedirectStandardError = true;
             process.StartInfo.UseShellExecute = false;
             process.StartInfo.CreateNoWindow = true;
-            process.StartInfo.WorkingDirectory = workingDirectory;
 
             process.Start();
 
@@ -258,6 +260,8 @@ namespace DockerWizard.UI
             IConfiguration config = builder.Build();
 
             _servers = config.GetSection("Servers").Get<List<Server>>()!;
+
+            _gitSettings = config.GetSection("GitSettings").Get<GitSettings>()!;
 
             int fileCount = builder.Sources
             .OfType<JsonConfigurationSource>()

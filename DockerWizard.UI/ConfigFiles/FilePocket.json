@@ -2,11 +2,14 @@
   "ProjectAndDockerCommands.1": [
     {
       "ProjectName": "FilePocket.UI",
-      "Path": "C:\\GitHub\\FilePocket",
+      "GitRepository": {
+        "RepositoryName": "FilePocket",
+        "BranchName": "main"
+      },
       "CreateAndPushCommands": [
         {
           "Name": "Build",
-          "Command": "docker build -f FilePocket.Client/Dockerfile -t filepocketclient ."
+          "Command": "docker build -f FilePocket.Client/Dockerfile -t filepocketclient"
         },
         {
           "Name": "Login",
@@ -38,11 +41,14 @@
     },
     {
       "ProjectName": "FilePocket.API",
-      "Path": "C:\\GitHub\\FilePocket",
+      "GitRepository": {
+        "RepositoryName": "FilePocket",
+        "BranchName": "main"
+      },
       "CreateAndPushCommands": [
         {
           "Name": "Build",
-          "Command": "docker build -f FilePocket.Host/Dockerfile -t filepockethost ."
+          "Command": "docker build -f FilePocket.Host/Dockerfile -t filepockethost"
         },
         {
           "Name": "Login",

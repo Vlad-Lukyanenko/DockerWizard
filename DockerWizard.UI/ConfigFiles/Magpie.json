@@ -2,11 +2,14 @@
   "ProjectAndDockerCommands.2": [
     {
       "ProjectName": "Magpie.UI",
-      "Path": "C:\\GitHub\\FilePocket",
+      "GitRepository": {
+        "RepositoryName": "MagpieChat",
+        "BranchName": "main"
+      },
       "CreateAndPushCommands": [
         {
           "Name": "Build",
-          "Command": "docker build -f MagpieChat.WebClient/Dockerfile -t magpiechatclient ."
+          "Command": "docker build -f MagpieChat.WebClient/Dockerfile -t magpiechatclient"
         },
         {
           "Name": "Login",
@@ -38,11 +41,14 @@
     },
     {
       "ProjectName": "Magpie.API",
-      "Path": "C:\\GitHub\\FilePocket",
+      "GitRepository": {
+        "RepositoryName": "MagpieChat",
+        "BranchName": "main"
+      },
       "CreateAndPushCommands": [
         {
           "Name": "Build",
-          "Command": "docker build -f MagpieChat.Host/Dockerfile -t magpiechathost ."
+          "Command": "docker build -f MagpieChat.Host/Dockerfile -t magpiechathost"
         },
         {
           "Name": "Login",
